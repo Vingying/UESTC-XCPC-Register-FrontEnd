@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Join Team</title>
+	</head>
+	<body>
+		<center>
+			<h1>电子科技大学ACM校赛报名系统</h1>
+		</center>
+		<h4>
+			<!-- 返回到contestinfo界面 -->
+			<a href="contestinfo.html">
+				<- Go back</a>
+		</h4>
+		<hr />
+		<script>
+			//鉴权，需要登录了的用户才能访问
+			var isLoginRequest = new XMLHttpRequest();
+			isLoginRequest.withCredentials = true;
+			isLoginRequest.open('GET', 'http://124.70.22.189:12345/api/getUserInfo', true);
+			isLoginRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			isLoginRequest.send();
+			isLoginRequest.onreadystatechange = function() {
+				if (isLoginRequest.readyState == 4 && isLoginRequest.status == 200) {
+					var receive = JSON.parse(isLoginRequest.response);
+					console.log(receive);
+					if (receive.code == 1001) {
+						console.log('鉴权失败');
+						window.location.replace('login.html');
+						return;
+					}
+					console.log('鉴权成功');
+				}
+			}
+			//比赛开始报名时才能报名
+			var getContestInfoRequest = new XMLHttpRequest();
+			getContestInfoRequest.open('GET', 'http://124.70.22.189:12345/api/getContestInfo', true);
+			getContestInfoRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			getContestInfoRequest.send();
+			getContestInfoRequest.onreadystatechange = function() {
+				if (getContestInfoRequest.readyState == 4 && getContestInfoRequest.status == 200) {
+					var receive = JSON.parse(getContestInfoRequest.responseText);
+					if (receive.code != 0) {
+						alert(receive.msg);
+						window.location.replace('contestinfo.html');
+						return;
+					}
+				}
+			}
+		</script>
+
+		<center>
+			<table>
+				<tr>
+					<td>Team ID:</td>
+					<td>
+						<input id="teamid" placeholder="队伍编号" />
+					</td>
+				</tr>
+				<tr>
+					<td>Invite Token:</td>
+					<td>
+						<input id="invitetoken" placeholder="邀请码" />
+					</td>
+				</tr>
+			</table>
+			<br />
+			<script>
+				function joinTeamFunc() {
+					var teamid = document.getElementById('teamid').value;
+					var invitetoken = document.getElementById('invitetoken').value;
+					if (teamid.length == 0) {
+						alert('队伍编号不能为空');
+						return;
+					}
+					if (invitetoken.length == 0) {
+						alert('邀请码不能为空');
+						return;
+					}
+					if (/^\d+$/.test(teamid) == false) {
+						alert('队伍编号仅包含数字');
+						return;
+					}
+					var teamObj = {
+						team_id: teamid,
+						invite_token: invitetoken,
+					};
+
+					var joinTeamRequest = new XMLHttpRequest();
+					joinTeamRequest.open('POST', 'http://124.70.22.189:12345/api/joinTeam', true);
+					joinTeamRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+					joinTeamRequest.send(JSON.stringify(teamObj));
+					joinTeamRequest.onreadystatechange = function() {
+						if (joinTeamRequest.readyState == 4 && joinTeamRequest.status == 200) {
+							var receive = JSON.parse(joinTeamRequest.responseText);
+							if (receive.code == 0) {
+								alert('加入队伍成功');
+								window.location.replace('contestinfo.html');
+								return;
+							} else {
+								alert(receive.msg);
+								return;
+							}
+						}
+					}
+				}
+			</script>
+			<button type="button" style="font-size: 16px; font-weight: 600;" onclick="joinTeamFunc()">Join!</button>
+		</center>
+	</body>
+</html>

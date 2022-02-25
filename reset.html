@@ -1,0 +1,152 @@
+<!-- 该页面实现忘记密码后重置密码的功能 -->
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<!-- 页面标题 -->
+		<title>Reset Password</title>
+	</head>
+
+	<body>
+		<center>
+			<h1>电子科技大学ACM校赛报名系统</h1>
+		</center>
+		<!-- 返回到登录界面 -->
+		<h4><a href="login.html">
+				<- Go back</a>
+		</h4>
+		<hr />
+		<form>
+			<center>
+				<!-- 创建表单 -->
+				<table>
+					<tr>
+						<!-- 输入邮箱 -->
+						<td>E-mail: </td>
+						<td>
+							<input type="text" id="email" name="email" placeholder="邮箱地址">
+						</td>
+					</tr>
+					<tr>
+						<!-- 输入邮箱验证码 -->
+						<td>Captcha: </td>
+						<td>
+							<input type="text" id="captcha" name="captcha" placeholder="邮箱验证码">
+						</td>
+						<td>
+							<!-- 发送验证码的函数 -->
+							<script>
+								function enableSendCaptchaButton() {
+									var sendButton = document.getElementById('sendcaptcha');
+									sendButton.removeAttribute('disabled');
+									sendButton.innerText = 'Send captcha';
+								}
+
+								function isCorrectEmail() {
+									var emailText = document.getElementById('email').value;
+									var regEmail = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/; //检查邮箱文本格式
+									if (regEmail.test(emailText) == false) {
+										alert('邮箱输入格式错误\n只允许英文字母、数字、下划线、英文句号、以及中划线组成');
+										return;
+									} else {
+										//发送邮箱验证码命令
+										var emailVerifyObj = new Object; //email属性保存邮箱地址，type是功能名称
+										emailVerifyObj.type = "reset"; //该页面的功能为 reset，表示重置密码
+										emailVerifyObj.email = emailText;
+										var emailVerifyPOST = new XMLHttpRequest() //创建一个POST请求，请求发送验证码
+										emailVerifyPOST.open('POST', 'http://124.70.22.189:12345/api/verifyEmail', true);
+										emailVerifyPOST.setRequestHeader('Content-type', 'application/json');
+										emailVerifyPOST.send(JSON.stringify(emailVerifyObj));
+										emailVerifyPOST.onreadystatechange = function() {
+											if (emailVerifyPOST.readyState == 4 && emailVerifyPOST.status == 200) {
+												var sendButton = document.getElementById('sendcaptcha');
+												sendButton.disabled = 'disabled';
+												sendButton.innerHTML = 'Waiting for 2 minutes'
+												alert('验证码已发送至邮箱，请前往邮箱查看');
+												setTimeout(enableSendCaptchaButton, 120 * 1000); //等待120秒后恢复可发送状态
+											}
+										}
+									}
+								}
+							</script>
+							<button type="button" id="sendcaptcha" name="sendcaptcha" onclick="isCorrectEmail()">Send
+								captcha</button>
+						</td>
+					</tr>
+					<tr>
+						<!-- 输入新的密码 -->
+						<td>New Password: </td>
+						<td>
+							<input type="password" id="pwd" name="password" placeholder="新密码">
+						</td>
+					</tr>
+					<tr>
+						<!-- 确认密码 -->
+						<td>
+							Confirm Password:
+						</td>
+						<td>
+							<input type="password" id="confpwd" name="password" placeholder="确认密码">
+						</td>
+					</tr>
+				</table>
+				<!-- 从该 CDN 下获得 CryptoJS，用 HmacSHA256 加密 -->
+				<script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.0.0/crypto-js.js"></script>
+				<script>
+					function resetFunc() {
+						const keySecret = 'sIPSqhzI8Yhb42HlH2YK'; //加密 token
+						var resetObj = new Object;
+						resetObj.email = document.getElementById('email').value;
+						if (resetObj.email.length == 0) {
+							alert('邮箱不能为空');
+							return;
+						}
+						var pwd = document.getElementById('pwd').value;
+						var confpwd = document.getElementById('confpwd').value;
+						resetObj.email_token = document.getElementById('captcha').value;
+						if (resetObj.email_token == 0) {
+							alert('验证码不能为空');
+							return;
+						}
+						if (pwd.length == 0) {
+							alert('请填写密码');
+							return;
+						}
+						if (pwd.length < 8) {
+							alert('密码长度至少为8位');
+							return;
+						}
+						if (pwd != confpwd) {
+							alert('Password与Confirm Password文本不一致');
+							return;
+						}
+						var hashSecret = CryptoJS.HmacSHA256(pwd, keySecret);
+						resetObj.pwd_token = CryptoJS.enc.Hex.stringify(hashSecret);
+						resetObj.action = "reset";
+
+						//发送重置密码请求
+						var resetRequest = new XMLHttpRequest();
+						resetRequest.open('POST', 'http://124.70.22.189:12345/api/forgot', true);
+						resetRequest.setRequestHeader('Content-type', 'application/json');
+						resetRequest.send(JSON.stringify(resetObj));
+						resetRequest.onreadystatechange = function() {
+							if (resetRequest.readyState == 4 && resetRequest.status == 200) {
+								var receive = JSON.parse(resetRequest.responseText);
+								if (receive.code != 0) {
+									alert(receive.msg);
+									return;
+								}
+								alert('重置密码成功');
+								window.location.href = 'login.html';
+								return;
+							}
+						}
+					}
+				</script>
+				<button type="button" onclick="resetFunc()">Reset Password</button>
+			</center>
+		</form>
+	</body>
+
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Contest Info</title>
+	</head>
+	<body>
+		<center>
+			<h1>电子科技大学ACM校赛报名系统</h1>
+		</center>
+		<!-- 鉴权，需要登录了的用户才能访问 -->
+		<div id='user-content'></div>
+		<script>
+			var userInfo = new Object; //用户信息
+			var uscid = document.getElementById('user-content');
+			userInfo.name = "Not Found Name";
+			userInfo.stuid = "Not Found Stuid";
+			userInfo.school = "Not Found School";
+
+			console.log(localStorage.getItem('token'));
+			var isLoginRequest = new XMLHttpRequest();
+			isLoginRequest.withCredentials = true;
+			isLoginRequest.open('GET', 'http://124.70.22.189:12345/api/getUserInfo', true);
+			isLoginRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			isLoginRequest.send();
+			isLoginRequest.onreadystatechange = function() {
+				if (isLoginRequest.readyState == 4 && isLoginRequest.status == 200) {
+					var receive = JSON.parse(isLoginRequest.responseText);
+					console.log(receive);
+					if (receive.code == 1001) {
+						console.log('鉴权failed');
+						window.location.replace('login.html');
+						return;
+					}
+					console.log('鉴权成功');
+					userInfo = receive.data;
+				}
+			}
+
+			function logoutFunc() {
+				console.log('logout');
+				if (confirm('确定要登出吗？')) {
+					localStorage.removeItem('token');
+					window.location.replace('login.html');
+					return;
+				}
+			}
+			uscid.innerHTML +=
+				'<button onclick="logoutFunc()" type="button" id="logout-button" style="width: 65px; height: 30px; font-size: 19px;">登出</button>'
+			uscid.innerHTML += '<hr />' + '<h2>User Info</h2>';
+			uscid.innerHTML += '<div style="font-size: 16px;"><center><table border="1"><tr><td>Name: </td><td>' + userInfo
+				.name +
+				'</td></tr>' + '<tr><td>School: </td><td>' + userInfo.school + '</td></tr>' + '<tr><td>Student ID: </td><td>' +
+				userInfo.stuid + '</td></tr>' + '</table></center></div>';
+			uscid.innerHTML +=
+				'<center><a style="font-size: 16px; font-weight: 600;" href="changeinfo.html">修改个人信息</a></center><hr />'
+		</script>
+		<h2>Team Info</h2>
+		<div id="team-content"></div>
+		<script>
+			var userInfo = {
+				name: 'Not Found',
+				stuid: 'Not Found',
+				school: 'Not Found',
+			}; //用户信息
+			var teamInfo = {
+				account: '',
+				password: '',
+				team_id: -1,
+				team_name: 'Not Found',
+				invite_token: 'Not Found',
+				member: [
+					userInfo, userInfo, userInfo
+				],
+				mem_cnt: -1,
+			}; //队伍信息
+			var teamid = document.getElementById('team-content');
+
+			var teamInfoRequest = new XMLHttpRequest();
+			var teamStatus;
+			teamInfoRequest.withCredentials = true;
+			teamInfoRequest.open('GET', 'http://124.70.22.189:12345/api/getTeamInfo', true);
+			teamInfoRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			teamInfoRequest.send();
+			teamInfoRequest.onreadystatechange = function() {
+				if (teamInfoRequest.readyState == 4 && teamInfoRequest.status == 200) {
+					var receive = JSON.parse(teamInfoRequest.responseText);
+					teamStatus = code;
+					if (receive.code != 0 && receive.code != 1002) {
+						alert('获取队伍信息失败');
+						setTimeout(function() {
+							console.log('logout');
+							localStorage.removeItem('token');
+							window.location.replace('login.html');
+						}, 300);
+						return;
+					}
+					if (receive.code == 1002) {
+						alert('你还没有加入任何队伍');
+						return;
+					}
+					teamInfo = receive.data;
+				}
+			}
+			if (teamInfo.account.length == 0) {
+				teamInfo.account = '(Waiting for admin)';
+			}
+			if (teamInfo.password.length == 0) {
+				teamInfo.password = '(Waiting for admin)';
+			}
+			if (teamStatus == 1002) {
+				teamid.innerHTML += '<p>You have not joined in any team.</p>';
+			} else {
+				teamid.innerHTML += '<center><table border="1">' +
+					'<tr><td>Team ID:</td><td>' + teamInfo.team_id + '</td></tr>' +
+					'<tr><td>Team Name:</td><td>' + teamInfo.team_name + '</td></tr>' +
+					'<tr><td>Team Account:</td><td>' + teamInfo.account + '</td></tr>' +
+					'<tr><td>Team Password:</td><td>' + teamInfo.password + '</td></tr>' +
+					'<tr><td>Invite Token:</td><td>' + teamInfo.invite_token + '</td></tr>' +
+					'<tr><td>Members:</td><td>' + '<table border="1">' +
+					'<tr><td>' + teamInfo.member[0].name + '</td><td>' + teamInfo.member[0].stuid + '</td></tr><tr><td>' +
+					teamInfo.member[1].name + '</td><td>' + teamInfo.member[1].stuid + '</td></tr><tr><td>' +
+					teamInfo.member[2].name + '</td><td>' + teamInfo.member[2].stuid + '</td></tr></table></td></tr>';
+			}
+
+			function joinTeamFunc() {
+				if (teamStatus != 1002) {
+					alert('已经在队伍中，不能加入队伍');
+					return;
+				}
+				window.location.href = "jointeam.html";
+				return;
+			}
+
+			function modifyTeamFunc() {
+				if (teamStatus == 1002) {
+					alert('当前没有加入任何队伍');
+					return;
+				}
+				window.location.href = "modifyteam.html";
+				return;
+			}
+
+			function createTeamFunc() {
+				if (teamStatus != 1002) {
+					alert('已经在队伍中，不能创建队伍');
+					return;
+				}
+				window.location.href = "createteam.html";
+				return;
+			}
+
+			function quitTeamFunc() {
+				if (teamStatus == 1002) {
+					alert('当前没有加入任何队伍');
+					return;
+				}
+				if (confirm('真的要退出该队伍吗？')) {
+					var quitTeamRequest = new XMLHttpRequest();
+					quitTeamRequest.open('POST', 'http://124.70.22.189:12345/api/quitTeam');
+					quitTeamRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+					quitTeamRequest.send();
+					quitTeamRequest.onreadystatechange = function() {
+						if (quitTeamRequest.readyState == 4 && quitTeamRequest.status == 200) {
+							var receive = JSON.parse(quitTeamRequest.responseText);
+							if (receive.code == 0) {
+								window.location.reload();
+								return;
+							} else {
+								alert(receive.msg);
+								return;
+							}
+						}
+					}
+				}
+			}
+			document.write('<br /><center>');
+			document.write(
+				'<button id="createteam" type="button" style="font-size: 16px; font-weight: 600;" onclick="createTeamFunc()">创建队伍</button>');
+			document.write(
+				'<button id="jointeam" type="button" style="font-size: 16px; font-weight: 600;" onclick="joinTeamFunc()">加入队伍</button>');
+			document.write(
+				'<button id="quitteam" type="button" style="font-size: 16px; font-weight: 600;" onclick="quitTeamFunc()">退出队伍</button>');
+			document.write(
+				'<button id="modifyteam" type="button" style="font-size: 16px; font-weight: 600;" onclick="modifyTeamFunc()">修改队伍信息</button>'
+			);
+			document.write('</center>');
+		</script>
+		<hr />
+		<h2>Contest Info</h2>
+		<script>
+			var contestObj = {
+				name: 'ContestName',
+				start_time: 'StartTime',
+				end_time: 'EndTime',
+				note: 'note',
+			};
+
+			var getContestInfoRequest = new XMLHttpRequest();
+			getContestInfoRequest.open('GET', 'http://124.70.22.189:12345/api/getContestInfo', true);
+			getContestInfoRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			getContestInfoRequest.send();
+			getContestInfoRequest.onreadystatechange = function() {
+				if (getContestInfoRequest.readyState == 4 && getContestInfoRequest.status == 200) {
+					var receive = JSON.parse(getContestInfoRequest.responseText);
+					if (receive.code == 0) {
+						contestObj = receive.data;
+						return;
+					}
+				}
+			}
+
+			document.write('<center><h3>' + contestObj.name + '</h3>');
+			document.write('<h4>Start Time: ' + contestObj.start_time +'</h4>');
+			document.write('<h4>End Time: ' + contestObj.end_time + '</h4></center>');
+			document.write('<p>Note: ' + contestObj.note + '</p>');
+		</script>
+	</body>
+</html>

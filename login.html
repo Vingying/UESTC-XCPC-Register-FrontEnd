@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Login Page</title>
+	</head>
+
+	<body>
+		<center>
+			<h1>电子科技大学ACM校赛报名系统</h1>
+		</center>
+		<hr />
+		<center>
+			<table>
+				<tr>
+					<td>E-mail: </td>
+					<td><input type="text" name="email" size="20" id="email" placeholder="输入邮箱地址"></td>
+				</tr>
+				<tr>
+					<td>Password: </td>
+					<td><input type="password" name="pwd" size="20" id="pwd" placeholder="输入密码"></td>
+				</tr>
+			</table>
+		</center>
+		<center>
+			<script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.0.0/crypto-js.js"></script>
+			<script>
+				function loginFunc() {
+					const keySecret = 'sIPSqhzI8Yhb42HlH2YK';
+					var loginObj = new Object;
+					loginObj.email = document.getElementById('email').value;
+					var hash = document.getElementById('pwd').value;
+					if (loginObj.email.length == 0) {
+						alert('请输入邮箱');
+						return;
+					}
+					if (hash.length == 0) {
+						alert('请输入密码');
+						return;
+					}
+					if (hash.length < 8) {
+						alert('密码长度应不小于8位');
+						return;
+					}
+					var hashSecret = CryptoJS.HmacSHA256(hash, keySecret);
+					loginObj.pwd = CryptoJS.enc.Hex.stringify(hashSecret);
+
+					//发送登录请求
+					var loginRequest = new XMLHttpRequest();
+					loginRequest.open('POST', 'http://124.70.22.189:12345/api/login', true);
+					loginRequest.setRequestHeader('Content-type', 'application/json');
+					loginRequest.send(JSON.stringify(loginObj));
+					loginRequest.onreadystatechange = function() {
+						if (loginRequest.readyState == 4 && loginRequest.status == 200) {
+							var receiveJWT = JSON.parse(loginRequest.responseText);
+							if (receiveJWT.code != 0) { //登录失败，提示错误信息
+								alert(receiveJWT.msg);
+								return;
+							}
+							localStorage.setItem('token', receiveJWT.data);
+							console.log('登录成功');
+							window.location.replace('contestinfo.html');
+							// console.log(localStorage.getItem('userjwt'));
+						}
+					}
+				}
+			</script>
+			<button type="submit" name="login" id="login" value="Login" onclick="loginFunc()">Login</button>
+			<input type="submit" name="enter" value="Register" onclick="window.location.href = 'register.html'">
+			<br>
+			<br>
+			<a href="reset.html">Forgot Password? Click here!</a>
+		</center>
+
+	</body>
+
+</html>

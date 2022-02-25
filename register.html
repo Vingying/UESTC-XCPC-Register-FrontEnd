@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<!-- 124.70.22.189:12345 -->
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Register Page</title>
+	</head>
+
+	<body>
+		<center>
+			<h1>电子科技大学ACM校赛报名系统</h1>
+		</center>
+		<h4>
+			<!-- 返回到登录界面 -->
+			<a href="login.html">
+				<- Go back</a>
+		</h4>
+		<hr />
+		<form action="" target="the_iframe">
+			<center>
+				<table>
+					<tr>
+						<td>Realname: </td>
+						<td><input type="text" name="name" width="177px" id="realname" placeholder="真实姓名" required></td>
+					</tr>
+					<tr>
+						<td>E-mail: </td>
+						<td><input type="text" name="email" width="177px" id="email" placeholder="邮箱" required></td>
+					</tr>
+					<tr>
+						<td>Captcha: </td>
+						<td><input type="text" name="captcha" width="177px" id="captcha" placeholder="邮箱验证码" required>
+						</td>
+						<td>
+							<form method="POST">
+								<button type="button" name="sendcaptcha" onclick="isCorrectEmail()" id="sendcaptcha">
+									Send captcha
+								</button>
+								<script>
+									function enableSendCaptchaButton() {
+										var sendButton = document.getElementById('sendcaptcha');
+										sendButton.removeAttribute('disabled');
+										sendButton.innerText = 'Send captcha';
+									}
+
+									function isCorrectEmail() {
+										var emailText = document.getElementById('email').value;
+										var regEmail = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/;
+										if (regEmail.test(emailText) == false) {
+											alert('邮箱输入格式错误\n只允许英文字母、数字、下划线、英文句号、以及中划线组成');
+											return;
+										} else {
+											//需要加入发送验证码命令
+											var emailVerifyObj = new Object;
+											emailVerifyObj.type = "register";
+											emailVerifyObj.email = emailText;
+											var emailVerifyPOST = new XMLHttpRequest()
+											emailVerifyPOST.open('POST', 'http://124.70.22.189:12345/api/verifyEmail', true);
+											emailVerifyPOST.setRequestHeader('Content-type', 'application/json');
+											emailVerifyPOST.send(JSON.stringify(emailVerifyObj));
+											emailVerifyPOST.onreadystatechange = function() {
+												if (emailVerifyPOST.readyState == 4 && emailVerifyPOST.status == 200) {
+													var sendButton = document.getElementById('sendcaptcha');
+													sendButton.disabled = 'disabled';
+													sendButton.innerHTML = 'Waiting for 2 minutes'
+													alert('验证码已发送至邮箱，请前往邮箱查看');
+													setTimeout(enableSendCaptchaButton, 120 * 1000);
+												}
+											}
+										}
+									}
+								</script>
+							</form>
+						</td>
+					</tr>
+					<tr>
+						<td>Password: </td>
+						<td><input type="password" name="pwd" width="177px" id="pwd" placeholder="密码" required></td>
+					</tr>
+					<tr>
+						<td>Confirm Password: </td>
+						<td><input type="password" name="confirmpwd" width="177px" id="confpwd" placeholder="确认密码"
+								required></td>
+					</tr>
+					<tr>
+						<td>School: </td>
+						<td>
+							<p id="schooltoid"></p>
+							<!-- 需要替换成 /api/getIDSchool 对应的表 -->
+							<script>
+								var SchoolIdObj = new Object
+								var IdSchool = new XMLHttpRequest()
+								// 下面这一部分需要解决跨域问题
+								IdSchool.open('GET', 'http://124.70.22.189:12345/api/getIDSchool', true);
+								IdSchool.send();
+								IdSchool.onreadystatechange = function() {
+									if (IdSchool.readyState == 4 && IdSchool.status == 200) {
+										var pSchoolId = document.getElementById("schooltoid");
+										SchoolIdObj = JSON.parse(IdSchool.responseText);
+										var selectString = '';
+										for (x in SchoolIdObj.data) {
+											selectString += '<option value = ' + SchoolIdObj.data[x] + '>' + SchoolIdObj.data[x] +
+												'</option>';
+										}
+										pSchoolId.innerHTML = '<select style="width:177px" id="school">' + selectString + '</select>';
+									}
+								}
+							</script>
+						</td>
+					</tr>
+					<tr>
+						<td>Student ID: </td>
+						<td><input type="text" name="stuid" width="177px" id="stuid" placeholder="学号" required></td>
+					</tr>
+				</table>
+				<script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.0.0/crypto-js.js"></script>
+				<script id='jiami'>
+					var workFunc = function() {
+						var stuObj = new Object;
+						const keySecret = 'sIPSqhzI8Yhb42HlH2YK';
+						stuObj.name = document.getElementById('realname').value;
+						stuObj.email = document.getElementById('email').value;
+						var pwd = document.getElementById('pwd').value;
+						var confpwd = document.getElementById('confpwd').value;
+						if (stuObj.name.length == 0) {
+							alert('真实姓名不能为空');
+							return;
+						}
+						if (stuObj.email.length == 0) {
+							alert('邮箱不能为空');
+							return;
+						}
+						if (pwd.length == 0) {
+							alert('密码不能为空');
+							return;
+						}
+						if (pwd.length < 8) {
+							alert('密码长度至少为8位');
+							return;
+						}
+						if (pwd != confpwd) {
+							alert('Password与Confirm Password文本不一致')
+							return;
+						} else {
+							var hashSecret = CryptoJS.HmacSHA256(pwd, keySecret);
+							stuObj.pwd_token = CryptoJS.enc.Hex.stringify(hashSecret);
+							console.log(stuObj.pwd_token);
+							var selectSchool = document.getElementById('school');
+							stuObj.school = selectSchool.selectedIndex + 1;
+							console.log(stuObj.school);
+							stuObj.stuid = document.getElementById('stuid').value;
+							if (stuObj.stuid.length == 0) {
+								alert('学号不能为空')
+								return;
+							}
+							stuObj.action = 'register';
+							var captcha = document.getElementById('captcha').value;
+							stuObj.email_token = captcha;
+							stuObj.email_token = captcha;
+							//向服务器发送注册信息（JSON）
+							var sendStuObjQuest = new XMLHttpRequest();
+							sendStuObjQuest.open('POST', 'http://124.70.22.189:12345/api/register', true);
+							sendStuObjQuest.setRequestHeader('Content-type', 'application/json');
+							sendStuObjQuest.send(JSON.stringify(stuObj));
+							sendStuObjQuest.onreadystatechange = function() {
+								if (sendStuObjQuest.readyState == 4 && sendStuObjQuest.status == 200) {
+									var json = JSON.parse(sendStuObjQuest.responseText);
+									console.log(json);
+									alert(json.msg);
+									if (json.code == 0) {
+										window.location.href = 'login.html';
+										return;
+									}
+								}
+							}
+						}
+					}
+				</script>
+				<button type="button" name="register" onclick='workFunc()'>Register</button>
+			</center>
+		</form>
+		<iframe id="the_iframe" name="the_iframe" style="display: none;"></iframe>
+	</body>
+
+</html>

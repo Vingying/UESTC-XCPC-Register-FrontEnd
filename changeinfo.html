@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Modify User Info</title>
+	</head>
+	<body>
+		<center>
+			<h1>电子科技大学ACM校赛报名系统</h1>
+		</center>
+		<h4>
+			<!-- 返回到contestinfo界面 -->
+			<a href="contestinfo.html">
+				<- Go back</a>
+		</h4>
+		<hr />
+
+		<script>
+			//鉴权，需要登录了的用户才能访问
+			var isLoginRequest = new XMLHttpRequest();
+			isLoginRequest.withCredentials = true;
+			isLoginRequest.open('GET', 'http://124.70.22.189:12345/api/getUserInfo', true);
+			isLoginRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			isLoginRequest.send();
+			isLoginRequest.onreadystatechange = function() {
+				if (isLoginRequest.readyState == 4 && isLoginRequest.status == 200) {
+					var receive = JSON.parse(isLoginRequest.response);
+					console.log(receive);
+					if (receive.code == 1001) {
+						console.log('鉴权失败');
+						window.location.replace('login.html');
+						return;
+					}
+					console.log('鉴权成功');
+				}
+			}
+			//比赛开始报名时才能报名
+			var getContestInfoRequest = new XMLHttpRequest();
+			getContestInfoRequest.open('GET', 'http://124.70.22.189:12345/api/getContestInfo', true);
+			getContestInfoRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			getContestInfoRequest.send();
+			getContestInfoRequest.onreadystatechange = function() {
+				if (getContestInfoRequest.readyState == 4 && getContestInfoRequest.status == 200) {
+					var receive = JSON.parse(getContestInfoRequest.responseText);
+					if (receive.code != 0) {
+						alert(receive.msg);
+						window.location.replace('contestinfo.html');
+						return;
+					}
+				}
+			}
+		</script>
+
+		<center>
+			<table>
+				<tr>
+					<td>Realname:</td>
+					<td>
+						<input id="name" placeholder="真实姓名" />
+					</td>
+				</tr>
+				<tr>
+					<td>Student ID</td>
+					<td>
+						<input id="stuid" placeholder="学号" />
+					</td>
+				</tr>
+				<tr>
+					<td>School:</td>
+					<td>
+						<p id="schooltoid"></p>
+						<!-- 需要替换成 /api/getIDSchool 对应的表 -->
+						<script>
+							var SchoolIdObj = new Object
+							var IdSchool = new XMLHttpRequest()
+							// 下面这一部分需要解决跨域问题
+							IdSchool.open('GET', 'http://124.70.22.189:12345/api/getIDSchool', true);
+							IdSchool.send();
+							IdSchool.onreadystatechange = function() {
+								if (IdSchool.readyState == 4 && IdSchool.status == 200) {
+									var pSchoolId = document.getElementById("schooltoid");
+									SchoolIdObj = JSON.parse(IdSchool.responseText);
+									var selectString = '';
+									for (x in SchoolIdObj.data) {
+										selectString += '<option value = ' + SchoolIdObj.data[x] + '>' + SchoolIdObj.data[x] +
+											'</option>';
+									}
+									pSchoolId.innerHTML = '<select style="width:177px" id="school">' + selectString + '</select>';
+								}
+							}
+						</script>
+					</td>
+				</tr>
+			</table>
+			<script>
+				function modifyUserFunc() {
+					var realname = document.getElementById('name').value;
+					var stuid = document.getElementById('stuid').value;
+					var selectSchool = document.getElementById('schooltoid');
+					var school = selectSchool.selectedIndex + 1;
+					if (realname.length == 0) {
+						alert('姓名不能为空');
+						return;
+					}
+					if (stuid.length == 0) {
+						alert('学号不能为空');
+						return;
+					}
+					var userObj = {
+						name: realname,
+						stuid: stuid,
+						school: school,
+					};
+
+					var modifyUserRequest = new XMLHttpRequest();
+					modifyUserRequest.open('POST', 'http://124.70.22.189:12345/api/modifyUserInfo', true);
+					modifyUserRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+					modifyUserRequest.send(JSON.stringify(userObj));
+					modifyUserRequest.onreadystatechange = function() {
+						if (modifyUserRequest.readyState == 4 && modifyUserRequest.status == 200) {
+							var receive = JSON.parse(modifyUserRequest.responseText);
+							if (receive.code == 0) {
+								alert('个人信息修改成功');
+								window.location.replace('contestinfo.html');
+								return;
+							} else {
+								alert(receive.msg);
+								return;
+							}
+						}
+					}
+				}
+			</script>
+			<br />
+			<button type="button" style="font-size: 16px; font-weight: 600;" onclick="modifyUserFunc()">Change!</button>
+		</center>
+	</body>
+</html>

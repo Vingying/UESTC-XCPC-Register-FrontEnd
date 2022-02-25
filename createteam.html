@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Create Team</title>
+	</head>
+	<body>
+		<center>
+			<h1>电子科技大学ACM校赛报名系统</h1>
+		</center>
+		<h4>
+			<!-- 返回到contestinfo界面 -->
+			<a href="contestinfo.html">
+				<- Go back</a>
+		</h4>
+		<hr />
+		<script>
+			//鉴权，需要登录了的用户才能访问
+			var isLoginRequest = new XMLHttpRequest();
+			isLoginRequest.withCredentials = true;
+			isLoginRequest.open('GET', 'http://124.70.22.189:12345/api/getUserInfo', true);
+			isLoginRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			isLoginRequest.send();
+			isLoginRequest.onreadystatechange = function() {
+				if (isLoginRequest.readyState == 4 && isLoginRequest.status == 200) {
+					var receive = JSON.parse(isLoginRequest.response);
+					console.log(receive);
+					if (receive.code == 1001) {
+						console.log('鉴权失败');
+						window.location.replace('login.html');
+						return;
+					}
+					console.log('鉴权成功');
+				}
+			}
+			//比赛开始报名时才能报名
+			var getContestInfoRequest = new XMLHttpRequest();
+			getContestInfoRequest.open('GET', 'http://124.70.22.189:12345/api/getContestInfo', true);
+			getContestInfoRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+			getContestInfoRequest.send();
+			getContestInfoRequest.onreadystatechange = function() {
+				if (getContestInfoRequest.readyState == 4 && getContestInfoRequest.status == 200) {
+					var receive = JSON.parse(getContestInfoRequest.responseText);
+					if (receive.code != 0) {
+						alert(receive.msg);
+						window.location.replace('contestinfo.html');
+						return;
+					}
+				}
+			}
+		</script>
+
+		<center>
+			<table>
+				<tr>
+					<td>Team Name: </td>
+					<td><input id="teamname" placeholder="队伍名称" /></td>
+				</tr>
+			</table>
+
+			<script>
+				function submitTeamFunc() {
+					var teamname = document.getElementById('teamname').value;
+					if (teamname.length == 0) {
+						alert('队伍名称不能为空');
+						return;
+					}
+					var teamnameObj = {
+						team_name: teamname,
+					};
+
+					var createTeamRequest = new XMLHttpRequest();
+					createTeamRequest.open('POST', 'http://124.70.22.189:12345/api/createTeam', true);
+					createTeamRequest.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('token'));
+					createTeamRequest.send(JSON.stringify(teamnameObj));
+					createTeamRequest.onreadystatechange = function() {
+						if (createTeamRequest.readyState == 4 && createTeamRequest.status == 200) {
+							var receive = JSON.parse(createTeamRequest.responseText);
+							if (receive.code == 0) {
+								alert('创建队伍成功');
+								window.location.replace('contestinfo.html');
+								return;
+							} else {
+								alert(receive.msg);
+								return;
+							}
+						}
+					}
+				}
+			</script>
+			<br />
+			<button type="button" style="font-size: 16px; font-weight: 600;" onclick="submitTeamFunc()">Create!</button>
+		</center>
+	</body>
+</html>
