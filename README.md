@@ -32,7 +32,7 @@ account 和 password 一开始默认为 (Waiting for admin)，直到管理员分
 
 权限：已登录用户 & 用户加入了 team
 
-更改当前队伍明称
+更改当前队伍名称
 
 ### createteam.html
 
